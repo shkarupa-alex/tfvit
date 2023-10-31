@@ -63,44 +63,41 @@ class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
         self.assertLen(output_shape, 4)
         self.assertEqual(output_shape[-1], last_dim)
 
-    # @parameterized.parameters(*MODEL_LIST)
-    # def test_application_weights_notop(self, app, size, last_dim):
-    #     model = app(weights='imagenet', include_top=False)
-    #     self.assertEqual(model.output_shape[-1], last_dim)
-    #
-    # @parameterized.parameters(*MODEL_LIST)
-    # def test_application_predict(self, app, size, _):
-    #     model = app(weights='imagenet')
-    #     self.assertIn(model.output_shape[-1], {1000, 21841})
-    #
-    #     test_image = data_utils.get_file(
-    #         'elephant.jpg', 'https://storage.googleapis.com/tensorflow/keras-applications/tests/elephant.jpg')
-    #     image = image_utils.load_img(test_image, target_size=(size, size), interpolation='bicubic')
-    #     image = image_utils.img_to_array(image)[None, ...]
-    #
-    #     image_ = tfvit.preprocess_input(image)
-    #     preds = model.predict(image_)
-    #
-    #     if 1000 == preds.shape[-1]:
-    #         names = [p[1] for p in imagenet_utils.decode_predictions(preds, top=3)[0]]
-    #
-    #         # Test correct label is in top 3 (weak correctness test).
-    #         self.assertIn('African_elephant', names)
-    #     else:
-    #         top_indices = preds[0].argsort()[-3:][::-1]
-    #         self.assertIn(3674, top_indices)
-    #
-    # @parameterized.parameters(*MODEL_LIST)
-    # def test_application_backbone(self, app, size, _):
-    #     inputs = layers.Input(shape=(None, None, 3), dtype='uint8')
-    #     outputs = app(include_top=False)(inputs)
-    #     outputs = layers.Conv2D(4, 3, padding='same', activation='softmax')(outputs)
-    #     model = models.Model(inputs=inputs, outputs=outputs)
-    #
-    #     data = np.random.uniform(0., 255., size=(2, size * 2, size * 2, 3)).astype('uint8')
-    #     result = model.predict(data)
-    #
-    #     self.assertTupleEqual(result.shape, (2, size * 2 // 32, size * 2 // 32, 4))
+    @parameterized.parameters(*MODEL_LIST)
+    def test_application_weights_notop(self, app, size, last_dim):
+        model = app(include_top=False)
+        self.assertEqual(model.output_shape[-1], last_dim)
+
+    @parameterized.parameters(*MODEL_LIST)
+    def test_application_predict(self, app, size, _):
+        model = app()
+        if 1000 != model.output_shape[-1]:
+            self.skipTest('Not an IN1k pretrained application.')
+
+        test_image = data_utils.get_file(
+            'elephant.jpg', 'https://storage.googleapis.com/tensorflow/keras-applications/tests/elephant.jpg')
+        image = image_utils.load_img(test_image, target_size=(size, size), interpolation='bicubic')
+        image = image_utils.img_to_array(image)[None, ...]
+
+        preds = model.predict(image)
+
+        names = [p[1] for p in imagenet_utils.decode_predictions(preds, top=3)[0]]
+        self.assertIn('African_elephant', names)
+
+    @parameterized.parameters(*MODEL_LIST)
+    def test_application_backbone(self, app, size, _):
+        inputs = layers.Input(shape=(None, None, 3), dtype='uint8')
+        outputs = app(include_top=False)(inputs)
+        outputs = layers.Conv2D(4, 3, padding='same', activation='softmax')(outputs)
+        model = models.Model(inputs=inputs, outputs=outputs)
+
+        data = np.random.uniform(0., 255., size=(2, size, size, 3)).astype('uint8')
+        result = model.predict(data)
+
+        self.assertEqual(result.shape[0], 2)
+        self.assertIn(result.shape[1], [size // 16, size // 32])
+        self.assertIn(result.shape[2], [size // 16, size // 32])
+        self.assertEqual(result.shape[3], 4)
 
 
 if __name__ == '__main__':
