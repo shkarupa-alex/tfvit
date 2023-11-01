@@ -316,10 +316,12 @@ def ViTLarge16384(
 
 def _Vit14518Dino2Reg(
         hidden_size, num_layers, num_heads, patch_size=14, num_reg=4, use_ls=True, img_size=518,
-        img_mean=(123.675, 116.28, 103.53), img_std=(58.395, 57.12, 57.375), head_pooling='token_avg', **kwargs):
+        img_mean=(123.675, 116.28, 103.53), img_std=(58.395, 57.12, 57.375), head_pooling='token_avg',
+        weights='dino2reg', **kwargs):
     return ViT(
         hidden_size=hidden_size, num_layers=num_layers, num_heads=num_heads, patch_size=patch_size, num_reg=num_reg,
-        use_ls=use_ls, img_size=img_size, img_mean=img_mean, img_std=img_std, head_pooling=head_pooling, **kwargs)
+        use_ls=use_ls, img_size=img_size, img_mean=img_mean, img_std=img_std, head_pooling=head_pooling,
+        weights=weights, **kwargs)
 
 
 def ViTSmall14518(model_name='vit_small_14', hidden_size=384, num_layers=12, num_heads=6, **kwargs):
