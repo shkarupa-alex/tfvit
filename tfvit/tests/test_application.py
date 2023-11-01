@@ -22,6 +22,11 @@ MODEL_LIST = [
 
     (tfvit.ViTLarge16224, 224, 1024),
     (tfvit.ViTLarge16384, 384, 1024),
+
+    (tfvit.ViTSmall14518, 518, 384),
+    (tfvit.ViTBase14518, 518, 768),
+    (tfvit.ViTLarge14518, 518, 1024),
+    (tfvit.ViTGiant14518, 518, 1536),
 ]
 
 
