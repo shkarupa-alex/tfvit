@@ -4,6 +4,7 @@ Keras (TensorFlow v2) reimplementation of **Vision Transformer** model.
 
 + Based on [Official implementation](https://github.com/google-research/vision_transformer).
 + Contains pretrained weights converted from official ones.
++ Contains pretrained weights converted from [DinoV2+Registers](https://github.com/facebookresearch/dinov2).
 
 ## Installation
 
@@ -53,5 +54,12 @@ Code simplification:
   author={Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and  Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and Uszkoreit, Jakob and Houlsby, Neil},
   journal={ICLR},
   year={2021}
+}
+
+@misc{darcet2023vitneedreg,
+  title={Vision Transformers Need Registers},
+  author={Darcet, Timothée and Oquab, Maxime and Mairal, Julien and Bojanowski, Piotr},
+  journal={arXiv:2309.16588},
+  year={2023}
 }
 ```
