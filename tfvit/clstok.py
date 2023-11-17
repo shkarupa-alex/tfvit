@@ -30,17 +30,6 @@ class AddClassToken(layers.Layer):
 
         return outputs
 
-    def compute_mask(self, inputs, mask=None):
-        if mask is None:
-            return None
-
-        token_mask = tf.ones_like(mask[:, :1], dtype='bool')
-        token_mask = tf.repeat(token_mask, 1 + self.num_registers, axis=1)
-
-        mask = tf.concat([token_mask, mask], axis=1)
-
-        return mask
-
     @shape_type_conversion
     def compute_output_shape(self, input_shape):
         length = input_shape[1]
