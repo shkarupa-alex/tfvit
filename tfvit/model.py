@@ -216,7 +216,7 @@ def ViT(
     model = models.Model(inputs, x, name=model_name)
 
     # Load weights.
-    weights_key = f'{model_name}__{weights}'
+    weights_key = f'{model_name}_{img_size}__{weights}'
     if weights in {'imagenet', 'imagenet21k'} and weights_key in WEIGHT_URLS:
         weights_url = WEIGHT_URLS[weights_key]
         weights_hash = WEIGHT_HASHES[weights_key]
