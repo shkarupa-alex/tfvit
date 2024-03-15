@@ -4,7 +4,7 @@ import os
 import numpy as np
 import torch
 from tfvit import model
-from keras.src.utils.data_utils import get_file
+from tf_keras.src.utils.data_utils import get_file
 
 BASE_URL = 'https://dl.fbaipublicfiles.com/dinov2/dinov2_{}.pth'
 CHECKPOINTS = {
