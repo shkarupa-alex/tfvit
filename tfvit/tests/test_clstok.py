@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras.src.testing_infra import test_combinations, test_utils
+from tf_keras.src.testing_infra import test_combinations, test_utils
 from tfvit.clstok import AddClassToken, SplitClassToken
 from testing_utils import layer_multi_io_test
 

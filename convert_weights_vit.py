@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import os
 from tfvit import model
-from keras.src.utils.data_utils import get_file
+from tf_keras.src.utils.data_utils import get_file
 
 BASE_URL = 'https://storage.googleapis.com/vit_models/augreg/{}.npz'
 CHECKPOINTS = {

@@ -1,8 +1,8 @@
 import numpy as np
 import tensorflow as tf
-from keras import backend, layers, mixed_precision, models
-from keras.src.applications import imagenet_utils
-from keras.src.utils import data_utils, layer_utils
+from tf_keras import backend, layers, mixed_precision, models
+from tf_keras.src.applications import imagenet_utils
+from tf_keras.src.utils import data_utils, layer_utils
 from tfvit.ape import AbsolutePositionEmbedding
 from tfvit.clstok import AddClassToken, SplitClassToken
 from tfvit.ls import LayerScale
