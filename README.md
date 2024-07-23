@@ -27,7 +27,7 @@ model.fit(...)
 Custom classification (with preprocessing):
 
 ```python
-from tf_keras import layers, models
+from keras import layers, models
 from tfvit import ViTBase32224
 
 inputs = layers.Input(shape=(224, 224, 3), dtype='uint8')

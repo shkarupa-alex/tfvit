@@ -1,31 +1,30 @@
 import tensorflow as tf
-from tf_keras import initializers, layers
-from tf_keras.saving import register_keras_serializable
-from tf_keras.src.utils.tf_utils import shape_type_conversion
+from keras.src import initializers, layers
+from keras.src.layers.input_spec import InputSpec
+from keras.src.saving import register_keras_serializable
 
 
 @register_keras_serializable(package='TFViT')
 class AbsolutePositionEmbedding(layers.Layer):
     def __init__(self, patch_size, pretrain_size, num_registers=0, **kwargs):
         super().__init__(**kwargs)
-        self.input_spec = layers.InputSpec(ndim=3)
+        self.input_spec = InputSpec(ndim=3)
 
         self.patch_size = patch_size
         self.pretrain_size = pretrain_size
         self.num_registers = num_registers
 
-    @shape_type_conversion
     def build(self, input_shape):
         channels = input_shape[-1]
         if channels is None:
             raise ValueError('Channel dimension of the inputs should be defined. Found `None`.')
-        self.input_spec = layers.InputSpec(ndim=3, axes={-1: channels})
+        self.input_spec = InputSpec(ndim=3, axes={-1: channels})
 
         current_patches = (self.pretrain_size // self.patch_size) ** 2 + 1 + self.num_registers
 
         # noinspection PyAttributeOutsideInit
         self.embedding = self.add_weight(
-            'embedding', shape=[1, current_patches, channels],
+            name='embedding', shape=[1, current_patches, channels],
             initializer=initializers.TruncatedNormal(stddev=0.02))
 
         super().build(input_shape)
@@ -65,7 +64,6 @@ class AbsolutePositionEmbedding(layers.Layer):
 
         return outputs
 
-    @shape_type_conversion
     def compute_output_shape(self, input_shape):
         return input_shape
 

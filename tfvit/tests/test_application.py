@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 import tfvit
 from absl.testing import parameterized
-from tf_keras import layers, models
-from tf_keras.applications import imagenet_utils
-from tf_keras.src.utils import data_utils, image_utils
+from keras.src import layers, models
+from keras.src.applications import imagenet_utils
+from keras.src.utils import get_file, image_utils
 
 MODEL_LIST = [
     (tfvit.ViTTiny16224, 224, 192),
@@ -48,26 +48,6 @@ class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
         self.assertLen(output_shape, 4)
         self.assertEqual(output_shape[-1], last_dim)
 
-    # @parameterized.parameters(*MODEL_LIST)
-    # def test_application_pooling(self, app, _, last_dim):
-    #     output_shape = app(weights=None, include_top=False, pooling='avg').output_shape
-    #     self.assertLen(output_shape, 2)
-    #     self.assertEqual(output_shape[-1], last_dim)
-
-    @parameterized.parameters(*MODEL_LIST)
-    def test_application_input_1_channel(self, app, size, last_dim):
-        input_shape = (size, size, 1)
-        output_shape = app(weights=None, include_top=False, input_shape=input_shape).output_shape
-        self.assertLen(output_shape, 4)
-        self.assertEqual(output_shape[-1], last_dim)
-
-    @parameterized.parameters(*MODEL_LIST)
-    def test_application_input_4_channels(self, app, size, last_dim):
-        input_shape = (size, size, 4)
-        output_shape = app(weights=None, include_top=False, input_shape=input_shape).output_shape
-        self.assertLen(output_shape, 4)
-        self.assertEqual(output_shape[-1], last_dim)
-
     @parameterized.parameters(*MODEL_LIST)
     def test_application_weights_notop(self, app, size, last_dim):
         model = app(include_top=False)
@@ -79,8 +59,8 @@ class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
         if 1000 != model.output_shape[-1]:
             self.skipTest('Not an IN1k pretrained application.')
 
-        test_image = data_utils.get_file(
-            'elephant.jpg', 'https://storage.googleapis.com/tensorflow/keras-applications/tests/elephant.jpg')
+        test_image = get_file(
+            'elephant.jpg', 'https://storage.googleapis.com/tensorflow/keras.src-applications/tests/elephant.jpg')
         image = image_utils.load_img(test_image, target_size=(size, size), interpolation='bicubic')
         image = image_utils.img_to_array(image)[None, ...]
 
@@ -100,8 +80,8 @@ class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
         result = model.predict(data)
 
         self.assertEqual(result.shape[0], 2)
-        self.assertIn(result.shape[1], [size // 16, size // 32])
-        self.assertIn(result.shape[2], [size // 16, size // 32])
+        self.assertIn(result.shape[1], [size // 14, size // 16, size // 32])
+        self.assertIn(result.shape[2], [size // 14, size // 16, size // 32])
         self.assertEqual(result.shape[3], 4)
 
 

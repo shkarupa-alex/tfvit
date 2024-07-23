@@ -1,25 +1,24 @@
 import tensorflow as tf
-from tf_keras.src.testing_infra import test_combinations, test_utils
+from keras.src import testing
 from tfvit.ape import AbsolutePositionEmbedding
 
 
-@test_combinations.run_all_keras_modes
-class TestAbsolutePositionEmbedding(test_combinations.TestCase):
+class TestAbsolutePositionEmbedding(testing.TestCase):
     def test_layer(self):
-        test_utils.layer_test(
+        self.run_layer_test(
             AbsolutePositionEmbedding,
-            kwargs={'patch_size': 16, 'pretrain_size': 224, 'num_registers': 0},
-            input_shape=[2, 14 ** 2 + 1, 8],
+            init_kwargs={'patch_size': 16, 'pretrain_size': 224, 'num_registers': 0},
+            input_shape=(2, 14 ** 2 + 1, 8),
             input_dtype='float32',
-            expected_output_shape=[None, 14 ** 2 + 1, 8],
+            expected_output_shape=(2, 14 ** 2 + 1, 8),
             expected_output_dtype='float32'
         )
-        test_utils.layer_test(
+        self.run_layer_test(
             AbsolutePositionEmbedding,
-            kwargs={'patch_size': 16, 'pretrain_size': 224, 'num_registers': 2},
-            input_shape=[2, 14 ** 2 + 3, 8],
+            init_kwargs={'patch_size': 16, 'pretrain_size': 224, 'num_registers': 2},
+            input_shape=(2, 14 ** 2 + 3, 8),
             input_dtype='float32',
-            expected_output_shape=[None, 14 ** 2 + 3, 8],
+            expected_output_shape=(2, 14 ** 2 + 3, 8),
             expected_output_dtype='float32'
         )
 
