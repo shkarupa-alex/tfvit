@@ -1,22 +1,21 @@
 import tensorflow as tf
-from tf_keras import layers
-from tf_keras.saving import register_keras_serializable
-from tf_keras.src.utils.tf_utils import shape_type_conversion
+from keras.src import layers
+from keras.src.layers.input_spec import InputSpec
+from keras.src.saving import register_keras_serializable
 
 
 @register_keras_serializable(package='TFViT')
 class AddClassToken(layers.Layer):
     def __init__(self, num_registers=0, **kwargs):
         super().__init__(**kwargs)
-        self.input_spec = layers.InputSpec(ndim=3)
+        self.input_spec = InputSpec(ndim=3)
         self.num_registers = num_registers
 
-    @shape_type_conversion
     def build(self, input_shape):
         channels = input_shape[-1]
         if channels is None:
             raise ValueError('Channel dimensions of the inputs should be defined. Found `None`.')
-        self.input_spec = layers.InputSpec(ndim=3, axes={-1: channels})
+        self.input_spec = InputSpec(ndim=3, axes={-1: channels})
 
         # noinspection PyAttributeOutsideInit
         self.token = self.add_weight(name='token', shape=(1, 1 + self.num_registers, channels), initializer='zeros')
@@ -30,7 +29,6 @@ class AddClassToken(layers.Layer):
 
         return outputs
 
-    @shape_type_conversion
     def compute_output_shape(self, input_shape):
         length = input_shape[1]
         if length is None:
@@ -49,19 +47,18 @@ class AddClassToken(layers.Layer):
 class SplitClassToken(layers.Layer):
     def __init__(self, patch_size, current_size, num_registers=0, **kwargs):
         super().__init__(**kwargs)
-        self.input_spec = layers.InputSpec(ndim=3)
+        self.input_spec = InputSpec(ndim=3)
 
         self.patch_size = patch_size
         self.current_size = current_size
         self.num_registers = num_registers
 
-    @shape_type_conversion
     def build(self, input_shape):
         # noinspection PyAttributeOutsideInit
         self.channels = input_shape[-1]
         if self.channels is None:
             raise ValueError('Channel dimensions of the inputs should be defined. Found `None`.')
-        self.input_spec = layers.InputSpec(ndim=3, axes={-1: self.channels})
+        self.input_spec = InputSpec(ndim=3, axes={-1: self.channels})
 
         # noinspection PyAttributeOutsideInit
         self.features_size = self.current_size // self.patch_size
@@ -75,7 +72,6 @@ class SplitClassToken(layers.Layer):
 
         return token, features
 
-    @shape_type_conversion
     def compute_output_shape(self, input_shape):
         features_shape = input_shape[:1] + (self.features_size, self.features_size, self.channels)
         token_shape = input_shape[:1] + (self.channels,)

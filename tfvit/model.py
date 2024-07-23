@@ -1,8 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from tf_keras import backend, layers, mixed_precision, models
-from tf_keras.src.applications import imagenet_utils
-from tf_keras.src.utils import data_utils, layer_utils
+from keras.src import backend, layers, models
+from keras.src.applications import imagenet_utils
+from keras.src.dtype_policies import dtype_policy
+from keras.src.ops import operation_utils
+from keras.src.utils import get_file
 from tfvit.ape import AbsolutePositionEmbedding
 from tfvit.clstok import AddClassToken, SplitClassToken
 from tfvit.ls import LayerScale
@@ -11,9 +13,9 @@ from tfvit.swiglu import SwiGLU
 BASE_URL = 'https://github.com/shkarupa-alex/tfvit/releases/download/{}/{}.h5'
 WEIGHT_URLS = {
     # ViT
-    'vit_tiny_16_224__imagenet21k': BASE_URL.format(
+    'vit_tiny_16_224_224__imagenet21k': BASE_URL.format(
         '1.0.0', 'Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0'),
-    'vit_tiny_16_384__imagenet': BASE_URL.format(
+    'vit_tiny_16_384_384__imagenet': BASE_URL.format(
         '1.0.0', 'Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_384'),
 
     'vit_small_16_224__imagenet21k': BASE_URL.format(
@@ -42,15 +44,15 @@ WEIGHT_URLS = {
         '1.0.0', 'L_16-i21k-300ep-lr_0.001-aug_strong1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_384'),
 
     # DinoV2 + Registers
-    'vit_small_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vits14_reg4_pretrain_linear_head.h5'),
-    'vit_base_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitb14_reg4_pretrain_linear_head.h5'),
-    'vit_large_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitl14_reg4_pretrain_linear_head.h5'),
-    'vit_giant_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitg14_reg4_pretrain_linear_head.h5'),
+    'vit_small_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vits14_reg4_pretrain_linear_head'),
+    'vit_base_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitb14_reg4_pretrain_linear_head'),
+    'vit_large_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitl14_reg4_pretrain_linear_head'),
+    'vit_giant_14_518__dino2reg': BASE_URL.format('1.0.0', 'dinov2_vitg14_reg4_pretrain_linear_head'),
 }
 WEIGHT_HASHES = {
     # ViT
-    'vit_tiny_16_224__imagenet21k': '65bb3d6d9a8145d6c7af6fe18b097d9419f36a46500b1928d54ccd577206477c',
-    'vit_tiny_16_384__imagenet': 'd9f1b51046c6a360b41a22b664a5e88e3623ff11596825984f096ecee0a32f44',
+    'vit_tiny_16_224_224__imagenet21k': '65bb3d6d9a8145d6c7af6fe18b097d9419f36a46500b1928d54ccd577206477c',
+    'vit_tiny_16_384_384__imagenet': 'd9f1b51046c6a360b41a22b664a5e88e3623ff11596825984f096ecee0a32f44',
 
     'vit_small_16_224__imagenet21k': '101035705a5c8251bd0a4804eeb8f4b5e84befcd4b0f7538a5a5734c77b92ef8',
     'vit_small_16_384__imagenet': '98c5a6fd55089fca7ca9c10b02c501cecf5625aa1336ec6a8478630f334ea759',
@@ -112,7 +114,7 @@ def ViT(
         When loading pretrained weights, `classifier_activation` can only be `None` or `"softmax"`.
 
     Returns:
-      A `keras.Model` instance.
+      A `keras.src.Model` instance.
     """
     if not (weights in {'imagenet', 'imagenet21k', 'dino2reg', None} or tf.io.gfile.exists(weights)):
         raise ValueError('The `weights` argument should be either `None` (random initialization), '
@@ -132,7 +134,7 @@ def ViT(
 
     if input_tensor is not None:
         try:
-            backend.is_keras_tensor(input_tensor)
+            backend.is_keras.src_tensor(input_tensor)
         except ValueError:
             raise ValueError(f'Expecting `input_tensor` to be a symbolic tensor instance. '
                              f'Got {input_tensor} of type {type(input_tensor)}.')
@@ -150,13 +152,13 @@ def ViT(
 
     if input_dtype is None:
         if (1., 0.) == img_scale and img_mean is None and img_std is None:
-            input_dtype = mixed_precision.global_policy().compute_dtype
+            input_dtype = dtype_policy.dtype_policy().compute_dtype
         else:
             input_dtype = 'uint8'
 
     # Define model inputs
     if input_tensor is not None:
-        if backend.is_keras_tensor(input_tensor):
+        if backend.is_keras.src_tensor(input_tensor):
             image = input_tensor
         else:
             image = layers.Input(tensor=input_tensor, shape=input_shape, dtype=input_dtype, name='images')
@@ -167,48 +169,48 @@ def ViT(
     x = image
 
     if (1., 0.) != img_scale:
-        x = layers.Rescaling(scale=img_scale[0], offset=img_scale[1], name='image/scale')(x)
+        x = layers.Rescaling(scale=img_scale[0], offset=img_scale[1], name='image_scale')(x)
     if not (img_mean is None and img_std is None):
-        x = layers.Normalization(mean=img_mean, variance=np.array(img_std) ** 2, name='image/norm')(x)
+        x = layers.Normalization(mean=img_mean, variance=np.array(img_std) ** 2, name='image_norm')(x)
 
-    x = layers.Conv2D(hidden_size, patch_size, strides=patch_size, use_bias=patch_bias, name='patch/embed')(x)
-    x = layers.Reshape([(img_size // patch_size) ** 2, hidden_size], name='patch/flatten')(x)
-    x = AddClassToken(num_registers=num_reg, name='patch/cls')(x)
-    x = AbsolutePositionEmbedding(patch_size, img_size, num_registers=num_reg, name='patch/pos')(x)
-    x = layers.Dropout(drop_rate, name='patch/drop')(x)
+    x = layers.Conv2D(hidden_size, patch_size, strides=patch_size, use_bias=patch_bias, name='patch_embed')(x)
+    x = layers.Reshape([(img_size // patch_size) ** 2, hidden_size], name='patch_flatten')(x)
+    x = AddClassToken(num_registers=num_reg, name='patch_cls')(x)
+    x = AbsolutePositionEmbedding(patch_size, img_size, num_registers=num_reg, name='patch_pos')(x)
+    x = layers.Dropout(drop_rate, name='patch_drop')(x)
 
     for i in range(num_layers):
-        y = layers.LayerNormalization(epsilon=ln_epsilon, name=f'layer_{i}/attn/norm')(x)
+        y = layers.LayerNormalization(epsilon=ln_epsilon, name=f'layer_{i}_attn_norm')(x)
         y = layers.MultiHeadAttention(
-            num_heads, hidden_size // num_heads, name=f'layer_{i}/attn/mhsa')(y, y)
-        y = layers.Dropout(drop_rate, name=f'layer_{i}/attn/drop')(y)
-        y = LayerScale(name=f'layer_{i}/attn/scale')(y) if use_ls else y
-        x = layers.add([x, y], name=f'layer_{i}/attn/add')
+            num_heads, hidden_size // num_heads, name=f'layer_{i}_attn_mhsa')(y, y)
+        y = layers.Dropout(drop_rate, name=f'layer_{i}_attn_drop')(y)
+        y = LayerScale(name=f'layer_{i}_attn_scale')(y) if use_ls else y
+        x = layers.add([x, y], name=f'layer_{i}_attn_add')
 
-        y = layers.LayerNormalization(epsilon=ln_epsilon, name=f'layer_{i}/mlp/norm')(x)
-        y = layers.Dense(int(hidden_size * mlp_ratio), name=f'layer_{i}/mlp/expand')(y)
+        y = layers.LayerNormalization(epsilon=ln_epsilon, name=f'layer_{i}_mlp_norm')(x)
+        y = layers.Dense(int(hidden_size * mlp_ratio), name=f'layer_{i}_mlp_expand')(y)
         if use_swiglu:
-            y = SwiGLU(name=f'layer_{i}/mlp/swiglu')(y)
+            y = SwiGLU(name=f'layer_{i}_mlp_swiglu')(y)
         else:
-            y = layers.Activation(mlp_act, name=f'layer_{i}/mlp/act')(y)
-        y = layers.Dense(hidden_size, name=f'layer_{i}/mlp/squeeze')(y)
-        y = layers.Dropout(drop_rate, name=f'layer_{i}/layer_{i}/mlp/drop')(y)
-        y = LayerScale(name=f'layer_{i}/mlp/scale')(y) if use_ls else y
-        x = layers.add([x, y], name=f'layer_{i}/mlp/add')
+            y = layers.Activation(mlp_act, name=f'layer_{i}_mlp_act')(y)
+        y = layers.Dense(hidden_size, name=f'layer_{i}_mlp_squeeze')(y)
+        y = layers.Dropout(drop_rate, name=f'layer_{i}_layer_{i}_mlp_drop')(y)
+        y = LayerScale(name=f'layer_{i}_mlp_scale')(y) if use_ls else y
+        x = layers.add([x, y], name=f'layer_{i}_mlp_add')
 
-    x = layers.LayerNormalization(epsilon=ln_epsilon, name=f'head/norm')(x)
-    x, features = SplitClassToken(patch_size, img_size, num_registers=num_reg, name='head/split')(x)
+    x = layers.LayerNormalization(epsilon=ln_epsilon, name=f'head_norm')(x)
+    x, features = SplitClassToken(patch_size, img_size, num_registers=num_reg, name='head_split')(x)
 
     if 'token_avg' == head_pooling:
-        x = layers.concatenate([x, layers.GlobalAveragePooling2D(name='head/avg')(features)], name='head/concat')
+        x = layers.concatenate([x, layers.GlobalAveragePooling2D(name='head_avg')(features)], name='head_concat')
 
     imagenet_utils.validate_activation(classifier_activation, weights)
-    x = layers.Dense(classes, name='head/proj')(x)
-    x = layers.Activation(classifier_activation, dtype='float32', name='head/act')(x)
+    x = layers.Dense(classes, name='head_proj')(x)
+    x = layers.Activation(classifier_activation, dtype='float32', name='head_act')(x)
 
     # Ensure that the model takes into account any potential predecessors of `input_tensor`.
     if input_tensor is not None:
-        inputs = layer_utils.get_source_inputs(input_tensor)
+        inputs = operation_utils.get_source_inputs(input_tensor)
     else:
         inputs = image
 
@@ -217,10 +219,10 @@ def ViT(
 
     # Load weights.
     weights_key = f'{model_name}_{img_size}__{weights}'
-    if weights in {'imagenet', 'imagenet21k'} and weights_key in WEIGHT_URLS:
+    if weights in {'imagenet', 'imagenet21k', 'dino2reg'} and weights_key in WEIGHT_URLS:
         weights_url = WEIGHT_URLS[weights_key]
         weights_hash = WEIGHT_HASHES[weights_key]
-        weights_path = data_utils.get_file(origin=weights_url, file_hash=weights_hash, cache_subdir='tfvit')
+        weights_path = get_file(origin=weights_url, file_hash=weights_hash, cache_subdir='tfvit')
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
@@ -228,7 +230,7 @@ def ViT(
     if include_top:
         return model
 
-    outputs = model.get_layer(name='head/split').output[1]
+    outputs = model.get_layer(name='head_split').output[1]
     model = models.Model(inputs=inputs, outputs=outputs, name=model_name)
 
     return model

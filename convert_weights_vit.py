@@ -3,13 +3,13 @@ import argparse
 import numpy as np
 import os
 from tfvit import model
-from tf_keras.src.utils.data_utils import get_file
+from keras.src.utils import get_file
 
 BASE_URL = 'https://storage.googleapis.com/vit_models/augreg/{}.npz'
 CHECKPOINTS = {
     # https://github.com/google-research/vision_transformer
-    'vit_tiny_16_224__imagenet21k': BASE_URL.format('Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0'),
-    'vit_tiny_16_384__imagenet': BASE_URL.format('Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0'
+    'vit_tiny_16_224_224__imagenet21k': BASE_URL.format('Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0'),
+    'vit_tiny_16_384_384__imagenet': BASE_URL.format('Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0'
                                                  '--imagenet2012-steps_20k-lr_0.03-res_384'),
     'vit_small_16_224__imagenet21k': BASE_URL.format('S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0'),
     'vit_small_16_384__imagenet': BASE_URL.format('S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0'
@@ -28,8 +28,8 @@ CHECKPOINTS = {
                                                   '--imagenet2012-steps_20k-lr_0.01-res_384'),
 }
 MODELS = {
-    'vit_tiny_16_224__imagenet21k': model.ViTTiny16224,
-    'vit_tiny_16_384__imagenet': model.ViTTiny16384,
+    'vit_tiny_16_224_224__imagenet21k': model.ViTTiny16224,
+    'vit_tiny_16_384_384__imagenet': model.ViTTiny16384,
 
     'vit_small_16_224__imagenet21k': model.ViTSmall16224,
     'vit_small_16_384__imagenet': model.ViTSmall16384,
@@ -49,17 +49,20 @@ MODELS = {
 
 
 def convert_name(n):
-    n = f'{n}:0'
-    n = n.replace('Transformer/posembed_input/pos_embedding', 'patch/pos/embedding')
-    n = n.replace('embedding', 'patch/embed').replace('patch/pos/patch/embed', 'patch/pos/embedding')
-    n = n.replace('cls', 'patch/cls/token')
+    n = n.replace('Transformer/posembed_input/pos_embedding', 'patch_pos/embedding')
+    n = n.replace('embedding', 'patch/embed').replace('patch_pos/patch/embed', 'patch_pos/embedding')
+    n = n.replace('cls', 'patch_cls/token')
     n = n.replace('Transformer/encoderblock_', 'layer_')
-    n = n.replace('LayerNorm_0', 'attn/norm').replace('LayerNorm_2', 'mlp/norm')
+    n = n.replace('LayerNorm_0', 'attn_norm').replace('LayerNorm_2', 'mlp_norm')
     n = n.replace('norm/scale', 'norm/gamma').replace('norm/bias', 'norm/beta')
-    n = n.replace('MultiHeadDotProductAttention_1', 'attn/mhsa').replace('out', 'attention_output')
+    n = n.replace('MultiHeadDotProductAttention_1', 'attn_mhsa').replace('out', 'attention_output')
     n = n.replace('MlpBlock_3', 'mlp').replace('Dense_0', 'expand').replace('Dense_1', 'squeeze')
-    n = n.replace('head', 'head/proj')
-    n = n.replace('Transformer/encoder_norm', 'head/norm')
+    n = n.replace('head', 'head_proj')
+    n = n.replace('Transformer/encoder_norm', 'head_norm')
+
+    n = n.replace('/mlp', '_mlp').replace('/attn', '_attn')
+    n = n.replace('/expand', '_expand').replace('/squeeze', '_squeeze')
+    n = n.replace('/embed', '_embed').replace('patch_pos_embedding', 'patch_pos/embedding')
 
     return n
 
@@ -87,12 +90,12 @@ if '__main__' == __name__:
 
     weights_tf = []
     for w in model.weights:
-        assert w.name in weights_jax, f'Can\'t find weight {w.name} in checkpoint'
+        assert w.path in weights_jax, f'Can\'t find weight {w.path} in checkpoint'
 
-        weight = weights_jax[w.name]
-        assert w.shape == weight.shape, f'Weight {w.name} shapes not compatible: {w.shape} vs {weight.shape}'
+        weight = weights_jax[w.path]
+        assert w.shape == weight.shape, f'Weight {w.path} shapes not compatible: {w.shape} vs {weight.shape}'
 
         weights_tf.append(weight)
 
     model.set_weights(weights_tf)
-    model.save_weights(path.replace('.npz', '.h5'), save_format='h5')
+    model.save_weights(path.replace('.npz', '.weights.h5'))
