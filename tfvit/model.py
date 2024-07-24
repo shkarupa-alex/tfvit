@@ -214,14 +214,14 @@ def ViT(
 
     if input_tensor is not None:
         try:
-            backend.is_keras.src_tensor(input_tensor)
+            backend.is_keras_tensor(input_tensor)
         except ValueError:
             raise ValueError(
                 f"Expecting `input_tensor` to be a symbolic tensor instance. "
                 f"Got {input_tensor} of type {type(input_tensor)}."
             )
 
-        tensor_shape = backend.int_shape(input_tensor)[1:]
+        tensor_shape = backend.shape(input_tensor)[1:]
         if input_shape and tensor_shape != input_shape:
             raise ValueError(
                 "Shape of `input_tensor` should equals to `input_shape` "
@@ -248,7 +248,7 @@ def ViT(
 
     # Define model inputs
     if input_tensor is not None:
-        if backend.is_keras.src_tensor(input_tensor):
+        if backend.is_keras_tensor(input_tensor):
             image = input_tensor
         else:
             image = layers.Input(
