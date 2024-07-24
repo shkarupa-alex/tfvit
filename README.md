@@ -1,6 +1,6 @@
 # tfvit
 
-Keras (TensorFlow v2) reimplementation of **Vision Transformer** model.
+Keras v3 (all backends) reimplementation of **Vision Transformer** model.
 
 + Based on [Official implementation](https://github.com/google-research/vision_transformer).
 + Contains pretrained weights converted from official ones.

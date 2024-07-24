@@ -1,10 +1,13 @@
 import numpy as np
-import tensorflow as tf
-import tfvit
 from absl.testing import parameterized
-from keras.src import layers, models
+from keras.src import layers
+from keras.src import models
+from keras.src import testing
 from keras.src.applications import imagenet_utils
-from keras.src.utils import get_file, image_utils
+from keras.src.utils import get_file
+from keras.src.utils import image_utils
+
+import tfvit
 
 MODEL_LIST = [
     (tfvit.ViTTiny16224, 224, 192),
@@ -30,7 +33,7 @@ MODEL_LIST = [
 ]
 
 
-class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
+class ApplicationTest(testing.TestCase, parameterized.TestCase):
     @parameterized.parameters(*MODEL_LIST)
     def test_application_base(self, app, *_):
         # Can be instantiated with default arguments
@@ -57,33 +60,40 @@ class ApplicationTest(tf.test.TestCase, parameterized.TestCase):
     def test_application_predict(self, app, size, _):
         model = app()
         if 1000 != model.output_shape[-1]:
-            self.skipTest('Not an IN1k pretrained application.')
+            self.skipTest("Not an IN1k pretrained application.")
 
         test_image = get_file(
-            'elephant.jpg', 'https://storage.googleapis.com/tensorflow/keras.src-applications/tests/elephant.jpg')
-        image = image_utils.load_img(test_image, target_size=(size, size), interpolation='bicubic')
+            "elephant.jpg",
+            "https://storage.googleapis.com/tensorflow/"
+            "keras.src-applications/tests/elephant.jpg",
+        )
+        image = image_utils.load_img(
+            test_image, target_size=(size, size), interpolation="bicubic"
+        )
         image = image_utils.img_to_array(image)[None, ...]
 
         preds = model.predict(image)
 
-        names = [p[1] for p in imagenet_utils.decode_predictions(preds, top=3)[0]]
-        self.assertIn('African_elephant', names)
+        names = [
+            p[1] for p in imagenet_utils.decode_predictions(preds, top=3)[0]
+        ]
+        self.assertIn("African_elephant", names)
 
     @parameterized.parameters(*MODEL_LIST)
     def test_application_backbone(self, app, size, _):
-        inputs = layers.Input(shape=(None, None, 3), dtype='uint8')
+        inputs = layers.Input(shape=(None, None, 3), dtype="uint8")
         outputs = app(include_top=False)(inputs)
-        outputs = layers.Conv2D(4, 3, padding='same', activation='softmax')(outputs)
+        outputs = layers.Conv2D(4, 3, padding="same", activation="softmax")(
+            outputs
+        )
         model = models.Model(inputs=inputs, outputs=outputs)
 
-        data = np.random.uniform(0., 255., size=(2, size, size, 3)).astype('uint8')
+        data = np.random.uniform(0.0, 255.0, size=(2, size, size, 3)).astype(
+            "uint8"
+        )
         result = model.predict(data)
 
         self.assertEqual(result.shape[0], 2)
         self.assertIn(result.shape[1], [size // 14, size // 16, size // 32])
         self.assertIn(result.shape[2], [size // 14, size // 16, size // 32])
         self.assertEqual(result.shape[3], 4)
-
-
-if __name__ == '__main__':
-    tf.test.main()
